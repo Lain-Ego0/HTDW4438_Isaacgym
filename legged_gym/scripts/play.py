@@ -1,76 +1,103 @@
-# SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: BSD-3-Clause
-# 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation
-# and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the copyright holder nor the names of its
-# contributors may be used to endorse or promote products derived from
-# this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# Copyright (c) 2021 ETH Zurich, Nikita Rudin
-
 from legged_gym import LEGGED_GYM_ROOT_DIR
 import os
 
 import isaacgym
 from legged_gym.envs import *
-from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Logger,export_policy_as_onnx
+# 注意：这里去掉了 export_policy_as_onnx 的导入，避免调用错误的库函数
+from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Logger
 
 import numpy as np
 import torch
 
+# --- 自定义导出函数：直接保存到你指定的目录 ---
+def local_export_policy_as_onnx(actor_critic, path):
+    """
+    将策略导出为 ONNX 格式
+    """
+    # 获取 actor 模型
+    if hasattr(actor_critic, 'actor'):
+        model = actor_critic.actor
+    else:
+        model = actor_critic
 
-def play(args):
+    # 创建虚拟输入 (Dummy Input) 用于追踪模型结构
+    # 假设输入维度适配你的 observation (通常自动适配权重维度)
+    dummy_input = torch.zeros(1, model[0].in_features, device=model[0].weight.device)
+    
+    # 确保目标文件夹存在
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    print(f"正在导出 ONNX 到: {path}")
+    
+    # 导出
+    torch.onnx.export(
+        model, 
+        dummy_input, 
+        path, 
+        opset_version=11,
+        verbose=False,
+        input_names=['obs'],
+        output_names=['actions']
+    )
+    print("导出成功！")
+
+def play(args, x_vel=0.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
-    # override some parameters for testing
+    
+    # --- 环境设置 ---
     env_cfg.env.num_envs = min(env_cfg.env.num_envs, 50)
-    env_cfg.terrain.num_rows = 5
-    env_cfg.terrain.num_cols = 5
-    env_cfg.terrain.curriculum = False
+    env_cfg.terrain.num_rows = 10
+    env_cfg.terrain.num_cols = 8
+    env_cfg.terrain.curriculum = True
+    env_cfg.terrain.max_init_terrain_level = 9
     env_cfg.noise.add_noise = False
     env_cfg.domain_rand.randomize_friction = False
     env_cfg.domain_rand.push_robots = False
+    env_cfg.domain_rand.disturbance = False
+    env_cfg.domain_rand.randomize_payload_mass = False
+    env_cfg.commands.heading_command = False
 
-    # prepare environment
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
+    
+    # 设置速度
+    env.commands[:, 0] = x_vel
+    env.commands[:, 1] = y_vel
+    env.commands[:, 2] = yaw_vel
+
     obs = env.get_observations()
-    # load policy
+    
+    # --- 加载模型 ---
     train_cfg.runner.resume = True
-    path='/home/arx/isaac/legged_gym/logs/rough_a1/Sep30_14-44-15_/model_1500.pt'
-    ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg,train_path=path)
+    load_run = args.load_run
+    checkpoint = args.checkpoint
+    
+    # 手动构建模型路径
+    if load_run and checkpoint:
+        path = os.path.join(LEGGED_GYM_ROOT_DIR, 'logs', train_cfg.runner.experiment_name, load_run, f"model_{checkpoint}.pt")
+        print(f"--> 正在加载模型路径: {path}")
+        # 显式传入 train_path
+        ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg, train_path=path)
+    else:
+        # 如果没传参数，让它尝试自动寻找（虽然可能会报错）
+        ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)
 
     policy = ppo_runner.get_inference_policy(device=env.device)
     
-    # export policy as a jit module (used to run it from C++)
+    # --- 关键修改：导出到你指定的目录 ---
     if EXPORT_POLICY:
-        path = os.path.join(LEGGED_GYM_ROOT_DIR, 'logs', train_cfg.runner.experiment_name, 'exported', 'policies')
-        export_policy_as_onnx(ppo_runner.alg.actor_critic)
-        print('Exported policy as jit script to: ', path)
+        # 指定你的目标目录
+        target_dir = '/home/sunteng/Documents/GitHub/HTDW4438_Isaacgym/onnx'
+        onnx_filename = f"policy_{checkpoint}.onnx" # 文件名带上 checkpoint 编号，防止混淆
+        onnx_full_path = os.path.join(target_dir, onnx_filename)
+        
+        # 调用本地函数导出
+        local_export_policy_as_onnx(ppo_runner.alg.actor_critic, onnx_full_path)
 
     logger = Logger(env.dt)
-    robot_index = 0 # which robot is used for logging
-    joint_index = 1 # which joint is used for logging
-    stop_state_log = 100 # number of steps before plotting states
-    stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
+    robot_index = 0 
+    joint_index = 1 
+    stop_state_log = 100 
+    stop_rew_log = env.max_episode_length + 1 
     camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)
     camera_vel = np.array([1., 1., 0.])
     camera_direction = np.array(env_cfg.viewer.lookat) - np.array(env_cfg.viewer.pos)
@@ -78,10 +105,18 @@ def play(args):
 
     for i in range(10*int(env.max_episode_length)):
         actions = policy(obs.detach())
+        
+        # 强制覆盖指令
+        env.commands[:, 0] = x_vel
+        env.commands[:, 1] = y_vel
+        env.commands[:, 2] = yaw_vel
+        
         obs, _, rews, dones, infos = env.step(actions.detach())
+
         if RECORD_FRAMES:
             if i % 2:
                 filename = os.path.join(LEGGED_GYM_ROOT_DIR, 'logs', train_cfg.runner.experiment_name, 'exported', 'frames', f"{img_idx}.png")
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
                 env.gym.write_viewer_image_to_file(env.viewer, filename)
                 img_idx += 1 
         if MOVE_CAMERA:
@@ -89,9 +124,10 @@ def play(args):
             env.set_camera(camera_position, camera_position + camera_direction)
 
         if i < stop_state_log:
+            current_target = actions[robot_index, joint_index].item() * env.cfg.control.action_scale + env.default_dof_pos[robot_index, joint_index].item()
             logger.log_states(
                 {
-                    'dof_pos_target': actions[robot_index, joint_index].item() * env.cfg.control.action_scale,
+                    'dof_pos_target': current_target,
                     'dof_pos': env.dof_pos[robot_index, joint_index].item(),
                     'dof_vel': env.dof_vel[robot_index, joint_index].item(),
                     'dof_torque': env.torques[robot_index, joint_index].item(),
@@ -116,8 +152,9 @@ def play(args):
             logger.print_rewards()
 
 if __name__ == '__main__':
-    EXPORT_POLICY = True
+    EXPORT_POLICY = True # 确保这里是 True
     RECORD_FRAMES = False
     MOVE_CAMERA = False
     args = get_args()
-    play(args)
+    play(args, x_vel=0.8, y_vel=0.0, yaw_vel=0.0)
+    

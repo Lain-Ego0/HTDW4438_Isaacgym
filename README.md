@@ -1,3 +1,10 @@
+
+tensorboard --logdir .
+
+export PYTHONPATH=. && python legged_gym/scripts/play.py --task=htdw_4438 --load_run Jan27_17-56-48_htdw_4438_himloco_v1 --checkpoint 1500
+
+python legged_gym/scripts/train.py --task=htdw_4438 --headless
+
 # Isaac Gym Environments for Legged Robots #
 This repository provides the environment used to train ANYmal (and other robots) to walk on rough terrain using NVIDIA's Isaac Gym.
 It includes all components needed for sim-to-real transfer: actuator network, friction & mass randomization, noisy observations and random pushes during training.  
