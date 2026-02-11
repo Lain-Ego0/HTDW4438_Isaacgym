@@ -151,4 +151,17 @@ class Htdw4438CfgPPO(LeggedRobotCfgPPO):
     class runner(LeggedRobotCfgPPO.runner):
         run_name = ''
         experiment_name = 'htdw_4438_standard' # 修改实验名称
-        max_iterations = 1500 # 根据需要调整
+        max_iterations = 2000 
+        save_interval = 200
+
+'''
+
+    How to run:
+    export PYTHONPATH=$PWD
+    python legged_gym/scripts/train.py --task=htdw_4438 --headless
+    
+'''
+
+# export PYTHONPATH=. && python legged_gym/scripts/play.py --task=htdw_4438 --load_run Feb11_10-32-53_ --checkpoint 1400
+
+# tensorboard --logdir .
