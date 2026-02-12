@@ -164,8 +164,7 @@ class Htdw4438Cfg(LeggedRobotCfg):
         dt = 0.005 
         substeps = 1 
         gravity = [0., 0., -9.81] 
-        # up_axis = 1 
-        up_axis = 0
+        up_axis = 1  # 0 is y, 1 is z
         class physx(LeggedRobotCfg.sim.physx):
             num_threads = 10
             solver_type = 1 

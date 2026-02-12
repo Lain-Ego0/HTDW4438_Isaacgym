@@ -151,8 +151,9 @@ def play(args, x_vel=0.0, y_vel=0.0, yaw_vel=0.0):
             logger.print_rewards()
 
 if __name__ == '__main__':
-    EXPORT_POLICY = True # 确保这里是 True
+    EXPORT_POLICY = True # 
     RECORD_FRAMES = False
     MOVE_CAMERA = False
     args = get_args()
-    play(args, x_vel=0.8, y_vel=0.0, yaw_vel=0.0)
+    play(args, x_vel=2.5, y_vel=0.0, yaw_vel=0.0)
+
