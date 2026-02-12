@@ -1,5 +1,5 @@
 <mujoco model="a1_description">
-    <compiler angle="radian" meshdir="/home/arx/isaac/legged_gym/resources/robots/a1/meshes/" />
+    <compiler angle="radian" meshdir="/home/sunteng/Documents/GitHub/HTDW4438_Isaacgym/resources/robots/a1/meshes" />
     <size njmax="500" nconmax="100" />
     <asset>
         <mesh name="trunk" file="trunk.stl" />

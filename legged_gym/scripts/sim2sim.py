@@ -74,7 +74,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/joy', Joy, joy_callback, queue_size=10)
 
 
-    policy_model_path = "/home/arx/isaac/legged_gym/onnx/legged.onnx"
+    policy_model_path = "/home/sunteng/Documents/GitHub/HTDW4438_Isaacgym/onnx/policy_1500.onnx"
 
     
     policy = ort.InferenceSession(policy_model_path, 
