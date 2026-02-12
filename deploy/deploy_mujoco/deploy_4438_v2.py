@@ -16,7 +16,7 @@ class Cfg:
     PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "../../")) 
     YAML_PATH = os.path.join(PROJECT_ROOT, "deploy/deploy_mujoco/config/htdw_4438.yaml")
     XML_PATH = os.path.join(PROJECT_ROOT, "resources/robots/htdw_4438/xml/scene.xml")
-    ONNX_PATH = os.path.join(PROJECT_ROOT, "onnx/policy_1500.onnx")
+    ONNX_PATH = os.path.join(PROJECT_ROOT, "onnx/policy_600.onnx")
 
     sim_dt = 0.005              # 200Hz 物理步长
     decimation = 4              # 50Hz 策略频率
