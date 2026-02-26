@@ -1,5 +1,6 @@
 from legged_gym import LEGGED_GYM_ROOT_DIR
 import os
+from datetime import datetime
 
 import isaacgym
 from legged_gym.envs import *
@@ -39,6 +40,18 @@ def local_export_policy_as_onnx(actor_critic, path):
         output_names=['actions']
     )
     print("导出成功！")
+
+def _safe_filename_part(value: str) -> str:
+    """Make a filesystem-friendly filename part (no slashes/spaces)."""
+    value = str(value).strip()
+    for ch in ("/", "\\", " ", "\t", "\n", ":", ";"):
+        value = value.replace(ch, "_")
+    return value
+
+def build_onnx_filename(project_name: str, checkpoint) -> str:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ckpt_title = f"model_{checkpoint}" if checkpoint is not None else "model_auto"
+    return f"{_safe_filename_part(project_name)}_{timestamp}_{_safe_filename_part(ckpt_title)}.onnx"
 
 def play(args, x_vel=0.0, y_vel=0.0, yaw_vel=0.0):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
@@ -84,9 +97,10 @@ def play(args, x_vel=0.0, y_vel=0.0, yaw_vel=0.0):
     
     # --- 导出到指定的目录 ---
     if EXPORT_POLICY:
-        # 指定你的目标目录
-        target_dir = '/home/sunteng/Documents/GitHub/HTDW4438_Isaacgym/onnx'
-        onnx_filename = f"policy_{checkpoint}.onnx" # 文件名带上 checkpoint 编号，防止混淆
+        # 导出到项目根目录的 onnx/，文件名: 项目名 + 时间 + checkpoint标题
+        target_dir = os.path.join(LEGGED_GYM_ROOT_DIR, "onnx")
+        project_name = getattr(train_cfg.runner, "experiment_name", None) or args.task
+        onnx_filename = build_onnx_filename(project_name, checkpoint)
         onnx_full_path = os.path.join(target_dir, onnx_filename)
         
         # 调用本地函数导出
@@ -155,5 +169,4 @@ if __name__ == '__main__':
     RECORD_FRAMES = False
     MOVE_CAMERA = False
     args = get_args()
-    play(args, x_vel=2.5, y_vel=0.0, yaw_vel=0.0)
-
+    play(args, x_vel=0.6, y_vel=0.6, yaw_vel=0.0)
