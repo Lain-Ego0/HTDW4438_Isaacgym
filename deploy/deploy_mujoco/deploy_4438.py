@@ -20,7 +20,7 @@ class Cfg:
     MESHES_DIR = os.path.join(ROBOT_DIR, "meshes")
 
     YAML_PATH = os.path.join(PROJECT_ROOT, "deploy/deploy_mujoco/config/htdw_4438.yaml")
-    ONNX_PATH = os.path.join(PROJECT_ROOT, "onnx/htdw_4438_standard_20260226_165638_model_1500.onnx")
+    ONNX_PATH = os.path.join(PROJECT_ROOT, "onnx/htdw_4438_standard_20260227_113156_model_1500.onnx")
 
     sim_dt = 0.005              # 200Hz 物理步长
     decimation = 4              # 50Hz 策略频率
@@ -158,7 +158,7 @@ def run_simulation():
     tau_limit = np.maximum(np.abs(ctrl_range[:, 0]), np.abs(ctrl_range[:, 1])).astype(np.float32)
     
     print("\n✅ 启动成功！")
-    print("🎮 控制指南: [↑/↓] 前进后退 | [←/→] 左右转向 | [Shift + ←/→] 左右平移 | [Enter] 停止")
+    print("🎮 控制指南: [↑/↓] 前进后退 | [←/→] 左右转向 | [Shift + ←/→] 左右平移 | [空格] 停止")
 
     step_counter = 0
     while viewer.is_alive:

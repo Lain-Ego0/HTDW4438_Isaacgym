@@ -1,3 +1,0 @@
-Mon Sep 29 16:12:01 2025
-WARNING: File size over 2GB is not supported. File: '/home/arx/isaac/legged_gym/resources/TOE_dog3/xml/assets'
-
