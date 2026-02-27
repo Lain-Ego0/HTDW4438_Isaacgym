@@ -19,16 +19,19 @@ python legged_gym/scripts/train.py --task=htdw_4438 --headless
 ## 一、完整安装步骤
 整体安装思路为：
 1. 安装支持 CUDA 的 NVIDIA 驱动
-2. 创建 Python 3.8 的conda环境。
-3. 安装CUDA
-4. 安装与 CUDA 版本匹配的 PyTorch。
+2. 创建 Python 3.8 的 conda 环境（推荐使用`HTDW4438.yml`）
+3. （可选）安装CUDA（仅在需要系统CUDA Toolkit / nvcc时）
+4. 安装与 CUDA 版本匹配的 PyTorch（使用`HTDW4438.yml`可跳过）
 5. 安装Isaacgym
-6. 下载isacgym官方环境包
+6. （可选）安装IsaacGymEnvs
+7. 安装rsl_rl
+8. 安装legged_gym
    
 - conda环境已经打包为HTDW4438.yml,可直接使用：
 
     ```bash
     conda env create -f HTDW4438.yml
+    conda activate HTDW4438
     ```
 
 ### 分步安装命令与操作
@@ -55,7 +58,7 @@ python legged_gym/scripts/train.py --task=htdw_4438 --headless
     sudo apt install nvidia-driver-535
     ```
 
-2.  创建 Python 3.8 的conda环境
+2.  创建 Python 3.8 的conda环境（如已使用`HTDW4438.yml`可跳过）
    
     ```bash
     # 安装miniconda 
@@ -64,77 +67,52 @@ python legged_gym/scripts/train.py --task=htdw_4438 --headless
     ./Miniconda3-latest-Linux-x86_64.sh
 
     # 创建并验证虚拟环境
-    conda create -n leggedgym python=3.8.10
+    conda create -n HTDW4438 python=3.8.10
     # 进入环境
-    conda activate leggedgym
+    conda activate HTDW4438
 
     ```
 
-3.  安装CUDA
+3.  安装CUDA（可选：仅在需要系统CUDA Toolkit / nvcc时安装；使用`pytorch-cuda`时通常可跳过）
     1. 首先进入CUDA官网：https://developer.nvidia.com/cuda-toolkit-archive
     2. 我们以12.1为例：
     ```bash
     wget https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_530.30.02_linux.run
     sudo sh cuda_12.1.0_530.30.02_linux.run
     ```
-4.  安装与 CUDA 版本匹配的 PyTorch
+4.  安装与 CUDA 版本匹配的 PyTorch（如已使用`HTDW4438.yml`可跳过；避免与pip重复安装torch/torchvision）
    
     ```bash
     # 安装环境内cuda
-    conda activate leggedgym
+    conda activate HTDW4438
     conda install pytorch torchvision pytorch-cuda=12.1.0 -c pytorch -c nvidia
 
-    # 安装pytorch
-    sudo apt install python3-pip
-    pip install torchvision -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install torch -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install pyquaternion -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install pyyaml -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install pexpect -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install matplotlib -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install einops -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install tqdm -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install packaging -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install h5py -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install ipython -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install getkey -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install wandb -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install chardet -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install matplotlib -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install numpy==1.23.2 -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install h5py_cache -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install opencv-python -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install tensorboard -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install onnxruntime
-    pip install mujoco-python-viewer
+    # 安装其余Python依赖（不包含torch/torchvision）
+    python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple \
+      pyquaternion pyyaml pexpect matplotlib einops tqdm packaging h5py ipython getkey wandb chardet \
+      numpy==1.23.2 h5py_cache opencv-python tensorboard onnxruntime mujoco-python-viewer
 
     ```
 5.  安装Isaacgym
     从官网 https://developer.nvidia.com/isaac-gym 下载 Isaac Gym Preview 4，下载解压即可
 
-6.  下载isacgym官方包环境
+6.  （可选）下载IsaacGymEnvs官方环境包
    
     ```bash
     # 克隆仓库
     git clone https://github.com/isaac-sim/IsaacGymEnvs.git
-    conda activate leggedgym 
+    conda activate HTDW4438
     pip install -e ./IsaacGymEnvs
     ```
 
-7.  安装rsl_rl（PPO算法实现，必须切换v1.0.2版本）
+7.  安装rsl_rl（本仓库已内置，且已固定在v1.0.2）
     ```bash
-    # 克隆仓库
-    git clone https://github.com/leggedrobotics/rsl_rl
-    # 切换指定版本并安装
-    cd rsl_rl && git checkout v1.0.2 && pip install -e .
+    pip install -e rsl_rl
     ```
 
-8.  安装legged_gym本体
+8.  安装legged_gym本体（本仓库已内置）
     ```bash
-    # 克隆仓库
-    git clone https://github.com/leggedrobotics/legged_gym
-    # 执行可编辑模式安装
-    cd legged_gym && pip install -e .
+    pip install -e legged_gym
     ```
 
 ## 二、代码核心结构
@@ -208,12 +186,12 @@ tensorboard --logdir .
 | 日志查看 | `tensorboard --logdir .` |
 | 策略回放 | `export PYTHONPATH=. && python legged_gym/scripts/play.py --task=htdw_4438 --load_run Jan27_17-56-48_h --checkpoint 1500` |
 | 策略训练 | `python legged_gym/scripts/train.py --task=htdw_4438 --headless` |
-| Pytorch安装 | `pip3 install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html` |
+| 创建Conda环境（推荐） | `conda env create -f HTDW4438.yml && conda activate HTDW4438` |
+| 手动安装PyTorch（可选） | `conda install pytorch torchvision pytorch-cuda=12.1.0 -c pytorch -c nvidia` |
 | Isaac Gym安装 | `cd isaacgym/python && pip install -e .` |
 | Isaac Gym安装验证 | `cd examples && python 1080_balls_of_solitude.py` |
-| rsl_rl克隆 | `git clone https://github.com/leggedrobotics/rsl_rl` |
-| rsl_rl安装 | `cd rsl_rl && git checkout v1.0.2 && pip install -e .` |
-| legged_gym安装 | `cd legged_gym && pip install -e .` |
+| rsl_rl安装 | `pip install -e rsl_rl` |
+| legged_gym安装 | `pip install -e legged_gym` |
 | 基础训练示例 | `python legged_gym/scripts/train.py --task=anymal_c_flat` |
 | 基础回放示例 | `python legged_gym/scripts/play.py --task=anymal_c_flat` |
 | 系统依赖修复 | `sudo apt install libpython3.8` |
