@@ -23,8 +23,8 @@ class Cfg:
     ONNX_PATH = os.path.join(PROJECT_ROOT, "onnx/htdw_4438_standard_20260227_153916_model_600.onnx")
 
     sim_dt = 0.005              # 200Hz 物理步长
-    decimation = 4              # 50Hz 策略频率
-    
+    decimation = 2              # 100Hz 策略频率
+
     # 控制增量与衰减
     vel_scales = [0.05, 0.05, 0.1] # x, y, yaw 步进速度
     vel_decay = 0.95               # 自动减速系数
